@@ -17,15 +17,22 @@ const userSchema = new mongoose.Schema({
 
         password: {
             type: String,
-            required: true,
+            required: function passwordRequired(){
+                return this.role !== "bot"
+            },
             minLength: 6,
             select: false,
-        }
+        },
+        role: {
+            type: String,
+            enum: ["user", "bot"],
+            default: "user",
+        },
     },
 
     {
         timestamps: true,
-    }
-)
+    },
+);
 
 module.export = mongoose.model("User", userSchema); 
