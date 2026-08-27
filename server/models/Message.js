@@ -13,12 +13,13 @@ const messageSchema = new mongoose.Schema({
             required: true,
             index: true
         },
-        recipient: {
+        receiver: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: true,
             index: true
         },
+        // for future bot integration
         authorType: {
             type: String,
             enum: ["user", "bot"],
@@ -34,8 +35,8 @@ messageSchema.statics.between = function (a, b) {
   return this.find({
      //$or gives both ways send and receive, without this, it is not possible to send and receive from both sides
     $or: [
-      { sender: a, recipient: b },
-      { sender: b, recipient: a },
+      { sender: a, receiver: b },
+      { sender: b, receiver: a },
     ],
   })
     .sort({ createdAt: 1 }) //newest first

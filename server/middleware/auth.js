@@ -5,10 +5,10 @@ function protect(req, res, next) {
   if (!token)
     return res.status(401).json({ message: "Unauthorised — No token" });
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decrypted = jwt.verify(token, process.env.JWT_SECRET);
     req.user = { 
-        id: decoded.id,
-        role: decoded.role
+        id: decrypted.id,
+        role: decrypted.role
     };
     next();
   } catch (err) {
