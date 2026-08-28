@@ -14,53 +14,95 @@ export default function Chat({ user, onLogout }) {
   const navigate = useNavigate();
 
   // Load the contact list.
-  useEffect(() => {
-    api.get("/chat/users").then((res) => setUsers(res.data)).catch(() => {});
-  }, []);
+ useEffect(() => {
+  api.get("/chat/users")
+    .then((res) => setUsers(res.data.users))   // <-- was res.data
+    .catch(() => {});
+}, []);
 
   // Make sure the socket is connected on this page.
   useEffect(() => {
     if (!socket.connected) socket.connect();
   }, []);
 
-  // ---------- SOCKET LISTENERS ----------
+  //bONE-TIME: fill in unread badges on load
   useEffect(() => {
-    // TODO (student): listen for "online:count" and call setOnlineCount(count)
+    socket.emit("chat:unread", (list) => {
+      const initial = {};
+      (list || []).forEach(({ userId: fromId, count }) => {
+        initial[fromId] = count;
+      });
+      setUnread(initial);
+    });
+  }, []);
 
-    // TODO (student): listen for "chat:message" and add the message to the list.
-    //  Careful: only add it to the open thread if it belongs to that thread.
-    //  If it belongs to another user, increase that user's unread count instead.
+  // SOCKET LISTENERS
+  useEffect(() => {
+    const handleOnlineCount = (count) => setOnlineCount(count);
 
-    // TODO (student): listen for "chat:unread:update" and update the badge.
-    //  The data looks like { userId, count }.
+    const handleChatMessage = (message) => {
+      const isOpenThread =
+        activeUser &&
+        (message.sender === activeUser._id || message.receiver === activeUser._id) &&
+        (message.sender === user._id || message.receiver === user._id);
 
-    // TODO (student): emit "chat:unread" once here to fill all badges on load.
+      if (isOpenThread) {
+        setMessages((prev) => [...prev, message]);
+
+        // If the other person sent this while we already have the thread
+        // open, mark it read right away so the badge doesn't flicker on.
+        if (message.sender !== user._id) {
+          socket.emit("chat:read", message.sender);
+        }
+      }
+      // Badge counts are handled entirely by chat:unread:update below —
+      // don't bump them here or you'll double-count.
+    };
+
+    const handleUnreadUpdate = ({ userId: fromId, count }) => {
+      setUnread((prev) => ({ ...prev, [fromId]: count }));
+    };
+
+    socket.on("online:count", handleOnlineCount);
+    socket.on("chat:message", handleChatMessage);
+    socket.on("chat:unread:update", handleUnreadUpdate);
 
     return () => {
       // IMPORTANT: remove listeners here or messages will appear twice.
-      // socket.off("online:count");
-      // socket.off("chat:message");
-      // socket.off("chat:unread:update");
+      socket.off("online:count", handleOnlineCount);
+      socket.off("chat:message", handleChatMessage);
+      socket.off("chat:unread:update", handleUnreadUpdate);
     };
-  }, [activeUser]);
+  }, [activeUser, user]);
 
   // ---------- OPEN A CHAT ----------
   const openChat = (other) => {
     setActiveUser(other);
     setMessages([]);
 
-    // TODO (student):
-    //  1. emit "chat:history" with other._id and put the result in setMessages
-    //  2. emit "chat:read" with other._id
-    //  3. set this user's unread count to 0 in the state
+    socket.emit("chat:history", other._id, (history) => {
+      setMessages(history || []);
+    });
+
+    socket.emit("chat:read", other._id);
+
+    setUnread((prev) => ({ ...prev, [other._id]: 0 }));
   };
 
   // ---------- SEND A MESSAGE ----------
   const sendMessage = (text) => {
     if (!text.trim() || !activeUser) return;
-    // TODO (student): emit "chat:send" with { to: activeUser._id, text }
-    // Do NOT add the message to the state here.
-    // The server will send it back through "chat:message".
+
+    socket.emit(
+      "chat:send",
+      { receiver: activeUser._id, text: text.trim() },
+      (res) => {
+        if (res?.error) {
+          console.error("Failed to send message:", res.error);
+        }
+      }
+    );
+    // Do NOT add the message to state here — it comes back via "chat:message".
   };
 
   const logout = async () => {

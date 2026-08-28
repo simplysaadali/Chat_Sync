@@ -29,7 +29,7 @@ export default function ChatThread({ me, other, messages, onSend }) {
       <div className="body">
         {messages.length === 0 && <p className="muted center-text">No messages yet.</p>}
         {messages.map((m) => (
-          <div key={m._id} className={"bubble " + (m.from === me._id ? "out" : "in")}>
+          <div key={m._id} className={"bubble " + (m.sender === me._id ? "out" : "in")}>
             {m.text}
             <span className="stamp">{time(m.createdAt)}</span>
           </div>

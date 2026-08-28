@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import api from "./api";
+import api from "./api/api.js";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Chat from "./pages/Chat.jsx";
@@ -13,7 +13,7 @@ export default function App() {
   useEffect(() => {
     api
       .get("/auth/me")
-      .then((res) => setUser(res.data))
+      .then((res) => setUser(res.data.user))
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
   }, []);

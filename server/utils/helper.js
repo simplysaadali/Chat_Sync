@@ -15,7 +15,7 @@ export const signToken = (user) =>
   );
 
 export const publicUser = (u) => ({
-  id: u._id,
+  _id: u._id,
   name: u.name,
   email: u.email,
   role: u.role,

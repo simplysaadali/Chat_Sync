@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../api";
+import api from "../api/api";
 import socket from "../socket";
 
 export default function Register({ onLogin }) {
@@ -15,7 +15,7 @@ export default function Register({ onLogin }) {
       setError("");
       const res = await api.post("/auth/register", form);
       socket.connect();
-      onLogin(res.data);
+      onLogin(res.data.user);
       navigate("/chat");
     } catch (err) {
       setError(err.response?.data?.message || "Register failed");

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../api";
+import api from "../api/api";
 import socket from "../socket";
 
 export default function Login({ onLogin }) {
@@ -15,7 +15,7 @@ export default function Login({ onLogin }) {
       setError("");
       const res = await api.post("/auth/login", form);
       socket.connect(); // open the socket only after login
-      onLogin(res.data);
+      onLogin(res.data.user);
       navigate("/chat");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
