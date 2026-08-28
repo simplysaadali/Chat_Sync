@@ -43,4 +43,4 @@ messageSchema.statics.between = function (a, b) {
     .limit(150); //maximum nmber of messages to load
 };
 
-module.exports = mongoose.model("Message", messageSchema);
+export default mongoose.model("Message", messageSchema);

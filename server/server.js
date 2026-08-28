@@ -1,17 +1,18 @@
 import dotenv from "dotenv";
-import express from "express";
+dotenv.config();
+
+import express from "express"
+import http from "http";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import connectDB from "./config/db.js";
+import mongoose from "mongoose";
 
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
-
-dotenv.config();
+import initSocket from "./socket.js";
 
 const app = express();
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
-const PORT = process.env.PORT || 3000;
 
 app.use(cors({ origin: CLIENT_URL, credentials: true }));
 app.use(express.json());
@@ -19,19 +20,17 @@ app.use(cookieParser());
 
 app.get("/", (req, res) => res.send("Chat API is running"));
 app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
+app.use("/api/chat", userRoutes);
 
-const startServer = async () => {
-	try {
-		await connectDB();
-		app.listen(PORT, () => {
-			console.log(`Server running on port ${PORT}`);
-		});
-	} catch (error) {
-		console.error("Database connection error:", error.message);
-		process.exitCode = 1;
-	}
-};
+const server = http.createServer(app);
+initSocket(server);
 
-startServer();
+const PORT = process.env.PORT || 3000;
 
+mongoose
+  .connect(process.env.DB_URI)
+  .then(() => {
+    console.log("MongoDB connected");
+    server.listen(PORT, () => console.log("Server running on port " + PORT));
+  })
+  .catch((err) => console.log("MongoDB error:", err.message));
