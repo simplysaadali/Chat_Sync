@@ -1,6 +1,6 @@
 # Chat App
 
-![Chat App Banner](https://capsule-render.vercel.app/api?type=waving&color=8a9b68&height=180&section=header&text=Chat%20App&fontSize=60&fontColor=ffffff&animation=fadeIn&fontAlignY=38)
+![Chat App Banner](https://capsule-render.vercel.app/api?type=waving&color=264653&height=180&section=header&text=Chat%20App&fontSize=60&fontColor=ffffff&animation=fadeIn&fontAlignY=38)
 
 **Stack Used:**
 
@@ -280,7 +280,10 @@ Unread badges, online counts, and read receipts update as the conversation chang
 
 ## Video Demo
 
-[Watch the responsiveness video demo](ScreenShots/Responsiveness.mp4)
+<video controls width="720">
+	<source src="ScreenShots/Responsiveness.mp4" type="video/mp4">
+	Your browser does not support the embedded video.
+</video>
 
 ## Production Notes
 
