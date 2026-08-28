@@ -276,11 +276,11 @@ Unread badges, online counts, and read receipts update as the conversation chang
 
 ### Mobile View
 
-![Chat App mobile view](ScreenShots/Mobile-View.png)
+<img src="ScreenShots/Mobile-View.png" alt="Chat App mobile view" width="300">
 
 ## Video Demo
 
-[![Watch the demo](ScreenShots/Responsiveness.mp4)
+https://github.com/user-attachments/assets/dc616e78-7f2c-42c1-a501-69bad987210b
 
 *Click the image above to watch the full demo video.*
 
