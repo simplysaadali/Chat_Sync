@@ -14,7 +14,7 @@ export default function Login({ onLogin }) {
     try {
       setError("");
       const res = await api.post("/auth/login", form);
-      socket.connect(); // open the socket only after login
+      socket.connect();
       onLogin(res.data.user);
       navigate("/chat");
     } catch (err) {

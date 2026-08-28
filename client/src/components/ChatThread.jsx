@@ -28,12 +28,22 @@ export default function ChatThread({ me, other, messages, onSend }) {
 
       <div className="body">
         {messages.length === 0 && <p className="muted center-text">No messages yet.</p>}
-        {messages.map((m) => (
-          <div key={m._id} className={"bubble " + (m.sender === me._id ? "out" : "in")}>
-            {m.text}
-            <span className="stamp">{time(m.createdAt)}</span>
-          </div>
-        ))}
+        {messages.map((m) => {
+          const mine = m.sender === me._id;
+          return (
+            <div key={m._id} className={"bubble " + (mine ? "out" : "in")}>
+              {m.text}
+              <span className="stamp">
+                {time(m.createdAt)}
+                {mine && (
+                  <span className={"ticks " + (m.read ? "read" : "")}>
+                    {m.read ? "✓✓" : "✓"}
+                  </span>
+                )}
+              </span>
+            </div>
+          );
+        })}
         <div ref={bottom} />
       </div>
 

@@ -9,23 +9,24 @@ export default function Chat({ user, onLogout }) {
   const [users, setUsers] = useState([]);
   const [activeUser, setActiveUser] = useState(null);
   const [onlineCount, setOnlineCount] = useState(0);
-  const [unread, setUnread] = useState({}); // { userId: count }
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [unread, setUnread] = useState({});
   const [messages, setMessages] = useState([]);
   const navigate = useNavigate();
 
   // Load the contact list.
- useEffect(() => {
-  api.get("/chat/users")
-    .then((res) => setUsers(res.data.users))   // <-- was res.data
-    .catch(() => {});
-}, []);
+  useEffect(() => {
+    api.get("/chat/users")
+      .then((res) => setUsers(res.data.users))
+      .catch(() => {});
+  }, []);
 
   // Make sure the socket is connected on this page.
   useEffect(() => {
     if (!socket.connected) socket.connect();
   }, []);
 
-  //bONE-TIME: fill in unread badges on load
+  // ONE-TIME: fill in unread badges on load
   useEffect(() => {
     socket.emit("chat:unread", (list) => {
       const initial = {};
@@ -39,8 +40,20 @@ export default function Chat({ user, onLogout }) {
   // SOCKET LISTENERS
   useEffect(() => {
     const handleOnlineCount = (count) => setOnlineCount(count);
+    const handleOnlineUsers = (ids) => setOnlineUsers(ids);
 
     const handleChatMessage = (message) => {
+      const otherId = message.sender === user._id ? message.receiver : message.sender;
+
+      // keep the sidebar preview in sync
+      setUsers((prev) =>
+        prev.map((u) =>
+          u._id === otherId
+            ? { ...u, lastMessage: { text: message.text, createdAt: message.createdAt, sender: message.sender } }
+            : u
+        )
+      );
+
       const isOpenThread =
         activeUser &&
         (message.sender === activeUser._id || message.receiver === activeUser._id) &&
@@ -49,29 +62,36 @@ export default function Chat({ user, onLogout }) {
       if (isOpenThread) {
         setMessages((prev) => [...prev, message]);
 
-        // If the other person sent this while we already have the thread
-        // open, mark it read right away so the badge doesn't flicker on.
         if (message.sender !== user._id) {
           socket.emit("chat:read", message.sender);
         }
       }
-      // Badge counts are handled entirely by chat:unread:update below —
-      // don't bump them here or you'll double-count.
     };
 
     const handleUnreadUpdate = ({ userId: fromId, count }) => {
       setUnread((prev) => ({ ...prev, [fromId]: count }));
     };
 
+    const handleReadAck = ({ by }) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.sender === user._id && m.receiver === by ? { ...m, read: true } : m
+        )
+      );
+    };
+
     socket.on("online:count", handleOnlineCount);
+    socket.on("online:users", handleOnlineUsers);
     socket.on("chat:message", handleChatMessage);
     socket.on("chat:unread:update", handleUnreadUpdate);
+    socket.on("chat:read:ack", handleReadAck);
 
     return () => {
-      // IMPORTANT: remove listeners here or messages will appear twice.
       socket.off("online:count", handleOnlineCount);
+      socket.off("online:users", handleOnlineUsers);
       socket.off("chat:message", handleChatMessage);
       socket.off("chat:unread:update", handleUnreadUpdate);
+      socket.off("chat:read:ack", handleReadAck);
     };
   }, [activeUser, user]);
 
@@ -102,7 +122,6 @@ export default function Chat({ user, onLogout }) {
         }
       }
     );
-    // Do NOT add the message to state here — it comes back via "chat:message".
   };
 
   const logout = async () => {
@@ -120,6 +139,7 @@ export default function Chat({ user, onLogout }) {
         activeUser={activeUser}
         unread={unread}
         onlineCount={onlineCount}
+        onlineUsers={onlineUsers}
         onSelect={openChat}
         onLogout={logout}
       />

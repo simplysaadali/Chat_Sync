@@ -19,6 +19,11 @@ const messageSchema = new mongoose.Schema({
             required: true,
             index: true
         },
+        read: {
+            type: Boolean,
+            default: false,
+            index: true
+        },
         // for future bot integration
         authorType: {
             type: String,

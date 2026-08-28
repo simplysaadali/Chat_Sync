@@ -1,10 +1,10 @@
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
-import cookie from "cookie"
+import cookie from "cookie";
+import mongoose from "mongoose";
 
 import Message from "./models/Message.js";
 
-// userId -> number of open sockets for that user
 const onlineUsers = new Map();
 
 function getOnlineCount() {
@@ -21,6 +21,11 @@ function removeUser(userId) {
   else onlineUsers.set(userId, count);
 }
 
+function broadcastOnlineStatus(io) {
+  io.emit("online:count", getOnlineCount());
+  io.emit("online:users", Array.from(onlineUsers.keys()));
+}
+
 function initSocket(server) {
   const io = new Server(server, {
     cors: {
@@ -29,7 +34,6 @@ function initSocket(server) {
     },
   });
 
-  // ---- DONE FOR YOU: JWT check during the handshake ----
   io.use((socket, next) => {
     try {
       const raw = socket.handshake.headers.cookie || "";
@@ -48,31 +52,26 @@ function initSocket(server) {
     const userId = socket.user.id;
 
     socket.join(userId);
-
     addUser(userId);
     console.log("Connected:", userId, "| online:", getOnlineCount());
+    broadcastOnlineStatus(io);
 
-// 1: online:count
-    io.emit("online:count", getOnlineCount());
-
-// 2: chat:history
     socket.on("chat:history", async (withUserId, ack) => {
-        try {
-            const message = await Message.find({
-                $or: [
-                    { sender: userId, receiver: withUserId },
-                    { sender: withUserId, receiver: userId }
-                ],
-            }).sort ({ createdAt: 1 });
+      try {
+        const messages = await Message.find({
+          $or: [
+            { sender: userId, receiver: withUserId },
+            { sender: withUserId, receiver: userId }
+          ],
+        }).sort({ createdAt: 1 });
 
-            ack(message);
-        } catch (error) {
-            console.error("chat:history error:", err.message);
-            ack([]);
-        }
+        ack(messages);
+      } catch (error) {
+        console.error("chat:history error:", error.message);
+        ack([]);
+      }
     });
 
-// 3: chat:send
     socket.on("chat:send", async ({ receiver, text }, ack) => {
       try {
         if (!text || !text.trim()) {
@@ -103,12 +102,11 @@ function initSocket(server) {
       }
     });
 
-// 4: chat:unread
     socket.on("chat:unread", async (ack) => {
       try {
         const counts = await Message.aggregate([
           { $match: { receiver: new mongoose.Types.ObjectId(userId), read: false } },
-          { $group: { _id: "$from", count: { $sum: 1 } } },
+          { $group: { _id: "$sender", count: { $sum: 1 } } },
         ]);
 
         const result = counts.map((c) => ({ userId: c._id.toString(), count: c.count }));
@@ -119,7 +117,6 @@ function initSocket(server) {
       }
     });
 
-//  5: chat:read
     socket.on("chat:read", async (fromUserId) => {
       try {
         await Message.updateMany(
@@ -127,17 +124,13 @@ function initSocket(server) {
           { $set: { read: true } }
         );
 
-        // 6: chat:unread:update
         io.to(userId).emit("chat:unread:update", { userId: fromUserId, count: 0 });
-
-        // Sender ko batao ke uske messages padh liye gaye — ticks blue karne ke liye.
         io.to(fromUserId).emit("chat:read:ack", { by: userId });
       } catch (err) {
         console.error("chat:read error:", err.message);
       }
     });
 
-    // Bonus: chat:typing
     socket.on("chat:typing", ({ receiver }) => {
       io.to(receiver).emit("chat:typing", { from: userId });
     });
@@ -145,7 +138,7 @@ function initSocket(server) {
     socket.on("disconnect", () => {
       removeUser(userId);
       console.log("Disconnected:", userId, "| online:", getOnlineCount());
-      io.emit("online:count", getOnlineCount());
+      broadcastOnlineStatus(io);
     });
   });
 

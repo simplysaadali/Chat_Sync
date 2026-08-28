@@ -2,12 +2,14 @@ import { useState } from "react";
 
 const initial = (name) => (name || "?").charAt(0).toUpperCase();
 
-export default function UserList({ me, users, activeUser, unread, onlineCount, onSelect, onLogout }) {
+export default function UserList({ me, users, activeUser, unread, onlineCount, onlineUsers = [], onSelect, onLogout }) {
   const [search, setSearch] = useState("");
 
   const shown = users.filter((u) =>
     u.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  const isOnline = (id) => onlineUsers.includes(id);
 
   return (
     <div className="side">
@@ -40,10 +42,15 @@ export default function UserList({ me, users, activeUser, unread, onlineCount, o
             className={"row " + (activeUser?._id === u._id ? "active" : "")}
             onClick={() => onSelect(u)}
           >
-            <div className="avatar grey">{initial(u.name)}</div>
+            <div className="avatar-wrap">
+              <div className="avatar grey">{initial(u.name)}</div>
+              {isOnline(u._id) && <span className="online-dot" />}
+            </div>
             <div className="info">
               <div className="name">{u.name}</div>
-              <div className="muted small">{u.email}</div>
+              <div className="muted small preview">
+                {u.lastMessage ? u.lastMessage.text : "No messages yet"}
+              </div>
             </div>
             {unread[u._id] > 0 && <span className="badge">{unread[u._id]}</span>}
           </div>
