@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 
 import Message from "./models/Message.js";
 
-const onlineUsers = new Map();
+const onlineUsers = new Map(); //keeps users which are currently connected
 
 function getOnlineCount() {
   return onlineUsers.size;
@@ -26,11 +26,12 @@ function broadcastOnlineStatus(io) {
   io.emit("online:users", Array.from(onlineUsers.keys()));
 }
 
-function initSocket(server) {
+function initSocket(server) { //this func receives your http server
   const io = new Server(server, {
     cors: {
       origin: process.env.CLIENT_URL || "http://localhost:5173",
       credentials: true,
+      // It allows credentials such as cookies to be included in cross-origin requests/connections where applicable.
     },
   });
 
@@ -74,6 +75,7 @@ function initSocket(server) {
 
     socket.on("chat:send", async ({ receiver, text }, ack) => {
       try {
+
         if (!text || !text.trim()) {
           if (ack) ack({ error: "Message is empty" });
           return;

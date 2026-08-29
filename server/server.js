@@ -4,7 +4,7 @@ dotenv.config();
 import express from "express"
 import http from "http";
 import cors from "cors";
-import cookieParser from "cookie-parser";
+import cookieParser from "cookie-parser"; //with this, you can get cookie easily in backend, used as a middleware
 import mongoose from "mongoose";
 
 import authRoutes from "./routes/authRoutes.js";

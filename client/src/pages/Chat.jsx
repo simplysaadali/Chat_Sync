@@ -28,7 +28,7 @@ export default function Chat({ user, onLogout }) {
 
   // ONE-TIME: fill in unread badges on load
   useEffect(() => {
-    socket.emit("chat:unread", (list) => {
+    socket.emit("chat:unread", (list) => { //(list) -> call back from server response
       const initial = {};
       (list || []).forEach(({ userId: fromId, count }) => {
         initial[fromId] = count;
@@ -45,7 +45,7 @@ export default function Chat({ user, onLogout }) {
     const handleChatMessage = (message) => {
       const otherId = message.sender === user._id ? message.receiver : message.sender;
 
-      // keep the sidebar preview in sync
+      // keep the sidebar preview in sync, updates sidebar view
       setUsers((prev) =>
         prev.map((u) =>
           u._id === otherId
@@ -80,12 +80,14 @@ export default function Chat({ user, onLogout }) {
       );
     };
 
+    //registering the listeners
     socket.on("online:count", handleOnlineCount);
     socket.on("online:users", handleOnlineUsers);
     socket.on("chat:message", handleChatMessage);
     socket.on("chat:unread:update", handleUnreadUpdate);
     socket.on("chat:read:ack", handleReadAck);
 
+    // re-renders, means if  any updates, sudden change. also to run just one time each listener
     return () => {
       socket.off("online:count", handleOnlineCount);
       socket.off("online:users", handleOnlineUsers);
@@ -95,10 +97,10 @@ export default function Chat({ user, onLogout }) {
     };
   }, [activeUser, user]);
 
-  // ---------- OPEN A CHAT ----------
+  // OPEN A CHAT, calls userList
   const openChat = (other) => {
     setActiveUser(other);
-    setMessages([]);
+    setMessages([]); //avoiding to show user1 message in user2 chats, clearing them
 
     socket.emit("chat:history", other._id, (history) => {
       setMessages(history || []);
@@ -109,7 +111,7 @@ export default function Chat({ user, onLogout }) {
     setUnread((prev) => ({ ...prev, [other._id]: 0 }));
   };
 
-  // ---------- SEND A MESSAGE ----------
+  //SEND A MESSAGE,called by chat thread
   const sendMessage = (text) => {
     if (!text.trim() || !activeUser) return;
 
@@ -117,7 +119,7 @@ export default function Chat({ user, onLogout }) {
       "chat:send",
       { receiver: activeUser._id, text: text.trim() },
       (res) => {
-        if (res?.error) {
+        if (res?.error) { // ?. optional chainign, checks successfully
           console.error("Failed to send message:", res.error);
         }
       }

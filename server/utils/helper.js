@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 
 export const cookieOptions = () => ({
-  httpOnly: true,
+  httpOnly: true, //means the browser can't directly access the cookie
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax",
   maxAge: 7 * 24 * 60 * 60 * 1000,
