@@ -1,4 +1,4 @@
-# Chat App
+# Chat Sync
 
 ![Chat App Banner](https://capsule-render.vercel.app/api?type=waving&color=0:FF9A8B,100:FF6A88&height=180&section=header&text=Chat%20App&fontSize=60&fontColor=ffffff&animation=fadeIn&fontAlignY=38)
 
